@@ -14,7 +14,7 @@ if [ "${#1}" -ne 32 ]; then
     exit
 fi
 if [ "$(which curl)" != "" ]; then
-    if ! curl -s "$BINARY_URL" -o /bin/hetrixtools_agent; then
+    if ! curl -sL "$BINARY_URL" -o /bin/hetrixtools_agent; then
         echo "Downloading failed."
         exit
     fi
