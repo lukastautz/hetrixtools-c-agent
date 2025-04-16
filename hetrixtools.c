@@ -112,6 +112,7 @@ void get_current_jiffies_and_cpu_count(jiffies_spent *dest, system_metrics *metr
     dest->total = 0;
     int fd = open("/proc/stat", O_RDONLY);
     if (fd == -1 || read(fd, file_buf, sizeof(file_buf)) < 100) {
+        close(fd);
         memset(dest, 0, sizeof(*dest));
         return;
     }
