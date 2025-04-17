@@ -34,6 +34,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <netinet/in.h>
 #include <time.h>
 #include <ctype.h>
+#include <sys/time.h>
 
 #include "BearSSL/inc/bearssl.h"
 
@@ -85,6 +86,7 @@ char file_buf[8192], data_buf[512], http_buf[768], disk[32], disk_base64[64], cp
 system_metrics metrics;
 jiffies_spent cpu_start, cpu_end;
 uint64 net_rx_start, net_tx_start, net_rx_end, net_tx_end, cpu_total_diff, cpu_iowait_diff, cpu_work_diff;
+struct timespec net_start, net_end;
 br_ssl_client_context sc;
 br_x509_minimal_context xc;
 br_sslio_context ioc;
@@ -416,9 +418,9 @@ int send_https_request(const char *data, uint16 len) {
 void collect_and_send(void) {
     metrics.cpu_cores = get_cores_from_sysfs();
     get_current_jiffies_and_cpu_count(&cpu_start, &metrics);
-    get_network_stats(&net_rx_start, &net_tx_start);
     sleep(60);
     get_current_jiffies_and_cpu_count(&cpu_end, &metrics);
+    clock_gettime(CLOCK_MONOTONIC, &net_end);
     get_network_stats(&net_rx_end, &net_tx_end);
     metrics.uptime = get_uptime();
     struct utsname un;
@@ -443,8 +445,12 @@ void collect_and_send(void) {
         metrics.cpu_usage = metrics.cpu_iowait = 0.0;
     get_memory_info(&metrics);
     get_disk_info(&metrics);
-    metrics.rx_bytes = (net_rx_end - net_rx_start) / 60;
-    metrics.tx_bytes = (net_tx_end - net_tx_start) / 60;
+    double diff_seconds = ((double)net_end.tv_sec + (((double)net_end.tv_nsec) * 1e-9)) - ((double)net_start.tv_sec + (((double)net_start.tv_nsec) * 1e-9));
+    metrics.rx_bytes = (uint64)((double)(net_rx_end - net_rx_start) / diff_seconds);
+    metrics.tx_bytes = (uint64)((double)(net_tx_end - net_tx_start) / diff_seconds);
+    net_rx_start = net_rx_end;
+    net_tx_start = net_tx_end;
+    memcpy(&net_start, &net_end, sizeof(struct timespec));
     uint16 disk_len = 0, cpu_len, linux_version_len, data_len = 0;
     str_append(disk, &disk_len, ",");
     str_append_uint(disk, &disk_len, metrics.disk_total);
@@ -504,6 +510,8 @@ int main(void) {
     close(fd);
     br_ssl_client_init_full(&sc, &xc, TAs, TAs_NUM);
     br_ssl_engine_set_buffer(&sc.eng, iobuf, sizeof(iobuf), 1);
+    clock_gettime(CLOCK_MONOTONIC, &net_start);
+    get_network_stats(&net_rx_start, &net_tx_start);
     for (;;)
         collect_and_send();
     return 0;
