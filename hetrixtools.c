@@ -357,10 +357,12 @@ uint8 base64_encode(const unsigned char *input, uint8 len, char *to) {
 }
 
 int sock_read(void *ctx, unsigned char *buf, size_t len) {
-    return read(*(int *)ctx, buf, len);
+    int r = read(*(int *)ctx, buf, len);
+    return r ? r : -1;
 }
 int sock_write(void *ctx, const unsigned char *buf, size_t len) {
-    return write(*(int *)ctx, buf, len);
+    int w = write(*(int *)ctx, buf, len);
+    return w ? w : -1;
 }
 
 int setup_bearssl_connection(int *fd) {
