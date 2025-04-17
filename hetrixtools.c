@@ -413,7 +413,7 @@ int send_https_request(const char *data, uint16 len) {
     return 0;
 }
 
-int collect_and_send(void) {
+void collect_and_send(void) {
     metrics.cpu_cores = get_cores_from_sysfs();
     get_current_jiffies_and_cpu_count(&cpu_start, &metrics);
     get_network_stats(&net_rx_start, &net_tx_start);
@@ -485,7 +485,10 @@ int collect_and_send(void) {
     str_append(data_buf, &data_len, "|");
     str_append_uint(data_buf, &data_len, metrics.tx_bytes);
     str_append(data_buf, &data_len, "|");
-    return send_https_request(data_buf, data_len);
+    if (send_https_request(data_buf, data_len)) {
+        sleep(1);
+        send_https_request(data_buf, data_len);
+    }
 }
 
 int main(void) {
