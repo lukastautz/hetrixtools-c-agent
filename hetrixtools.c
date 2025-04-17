@@ -487,7 +487,10 @@ void collect_and_send(void) {
     str_append(data_buf, &data_len, "|");
     if (send_https_request(data_buf, data_len)) {
         sleep(1);
-        send_https_request(data_buf, data_len);
+        if (send_https_request(data_buf, data_len)) {
+            sleep(2);
+            send_https_request(data_buf, data_len);
+        }
     }
 }
 
