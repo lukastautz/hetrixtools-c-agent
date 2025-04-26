@@ -1,5 +1,5 @@
 #!/bin/bash
-BINARY_URL=https://github.com/lukastautz/hetrixtools-c-agent/releases/download/v1.2/hetrixtools_agent
+BINARY_URL=https://github.com/lukastautz/hetrixtools-c-agent/releases/latest/download/hetrixtools_agent
 RUN_AS_USER=root
 if [ "$EUID" -ne 0 ]; then
     echo "This script needs to be run as root"

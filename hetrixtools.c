@@ -48,6 +48,7 @@ typedef int8_t     int8;
 typedef int16_t    int16;
 typedef int32_t    int32;
 typedef int64_t    int64;
+typedef uint8      bool;
 
 typedef struct jiffies_spent_s {
     uint64 user;
@@ -358,11 +359,26 @@ uint8 base64_encode(const unsigned char *input, uint8 len, char *to) {
     return outlen;
 }
 
+bool sock_ready(int fd, bool read) {
+    fd_set fds;
+    struct timeval timeout = { .tv_sec = 4, .tv_usec = 0 };
+    FD_ZERO(&fds);
+    FD_SET(fd, &fds);
+    if (read)
+        return select(fd + 1, &fds, NULL, NULL, &timeout) > 0;
+    else
+        return select(fd + 1, NULL, &fds, NULL, &timeout) > 0;
+}
+
 int sock_read(void *ctx, unsigned char *buf, size_t len) {
+    if (!sock_ready(*(int *)ctx, 1))
+        return -1;
     int r = read(*(int *)ctx, buf, len);
     return r ? r : -1;
 }
 int sock_write(void *ctx, const unsigned char *buf, size_t len) {
+    if (!sock_ready(*(int *)ctx, 0))
+        return -1;
     int w = write(*(int *)ctx, buf, len);
     return w ? w : -1;
 }
